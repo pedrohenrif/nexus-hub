@@ -20,17 +20,16 @@ import { AddInfraModal } from '../../components/Projects/Details/AddInfraModal';
 export default function ProjectDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { canEdit, canDelete } = useAuth(); // <--- Verificação de Permissões
+  
+  // Obtém permissões do usuário logado
+  const { canEdit, canDelete } = useAuth(); 
   
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'docs' | 'infra' | 'settings'>('overview');
   
-  // Estados de Visibilidade dos Modais
   const [isAddModuleOpen, setIsAddModuleOpen] = useState(false); 
   const [isAddInfraOpen, setIsAddInfraOpen] = useState(false); 
-  
-  // Estado para edição (null = criar novo)
   const [moduleToEdit, setModuleToEdit] = useState<Module | null>(null);
 
   const refreshProject = () => {
@@ -51,7 +50,7 @@ export default function ProjectDetails() {
     }
   }, [id, navigate]);
 
-  // --- HANDLERS COM PROTEÇÃO ---
+  // --- HANDLERS PROTEGIDOS ---
 
   const handleSaveDocs = async (newDocs: string) => {
       if (!project || !canEdit) return; // Proteção Lógica
@@ -83,7 +82,6 @@ export default function ProjectDetails() {
           success: moduleToEdit ? 'Módulo atualizado!' : 'Módulo criado!',
           error: 'Erro ao salvar módulo.'
       });
-      
       refreshProject(); 
   };
 
@@ -137,7 +135,7 @@ export default function ProjectDetails() {
   };
 
   const handleDeleteProject = async () => {
-      if (!canDelete) return; // Apenas Admin
+      if (!canDelete) return; // Apenas Admin/Diretor
       if (project && window.confirm('Tem certeza que deseja excluir este projeto COMPLETAMENTE?')) {
           try {
               await api.deleteProject(project.id);
@@ -168,7 +166,7 @@ export default function ProjectDetails() {
                  { id: 'docs', label: 'Documentação' }, 
                  { id: 'settings', label: 'Configurações' }
              ].map(tab => {
-                 // PROTEÇÃO: Esconde a aba Configurações se não puder deletar
+                 // PROTEÇÃO: Esconde a aba Configurações (Excluir) se não puder deletar
                  if (tab.id === 'settings' && !canDelete) return null;
                  return (
                      <button 
@@ -191,7 +189,7 @@ export default function ProjectDetails() {
                   {activeTab === 'overview' && (
                       <OverviewTab 
                         project={project} 
-                        // Se não puder editar, passa função vazia (visualmente o botão deve ser tratado nos componentes filhos também se desejar esconder totalmente)
+                        // Se não puder editar, passa função vazia (o botão não fará nada)
                         onAddModule={canEdit ? handleOpenAddModule : () => {}} 
                         onEditModule={canEdit ? handleOpenEditModule : () => {}}
                         onDeleteModule={canEdit ? handleDeleteModule : () => {}}
@@ -203,18 +201,19 @@ export default function ProjectDetails() {
                         project={project} 
                         onSaveDetails={canEdit ? handleSaveInfra : async () => {}} 
                         onAddItem={canEdit ? () => setIsAddInfraOpen(true) : () => {}} 
-                        onDeleteItem={canEdit ? handleDeleteInfraItem : () => {}} 
+                        onDeleteItem={canEdit ? handleDeleteInfraItem : () => {}}
+                        canEdit={canEdit} // <--- Passando permissão para o componente esconder os botões visualmente
                       />
                   )}
 
                   {activeTab === 'docs' && (
                       <DocsTab 
                         project={project} 
-                        onSaveDocs={canEdit ? handleSaveDocs : async () => {}} 
+                        onSaveDocs={canEdit ? handleSaveDocs : async () => {}}
+                        canEdit={canEdit} // <--- Passando permissão
                       />
                   )}
 
-                  {/* Só renderiza se puder deletar */}
                   {activeTab === 'settings' && canDelete && (
                       <SettingsTab onDelete={handleDeleteProject} />
                   )}
@@ -225,7 +224,7 @@ export default function ProjectDetails() {
           </div>
       </div>
 
-      {/* PROTEÇÃO: Modais só existem se puder Editar */}
+      {/* Modais só renderizam se puder editar */}
       {canEdit && (
           <>
             <AddModuleModal isOpen={isAddModuleOpen} onClose={() => setIsAddModuleOpen(false)} onSave={handleSaveModule} initialData={moduleToEdit} />

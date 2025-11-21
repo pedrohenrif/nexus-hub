@@ -7,9 +7,10 @@ interface InfraTabProps {
   onSaveDetails: (newInfraDetails: string) => Promise<void>;
   onAddItem: () => void; // Callback para abrir o modal
   onDeleteItem: (id: string) => void; // Callback para deletar item
+  canEdit: boolean; // <--- NOVA PROP DE PERMISSÃO
 }
 
-export const InfraTab: React.FC<InfraTabProps> = ({ project, onSaveDetails, onAddItem, onDeleteItem }) => {
+export const InfraTab: React.FC<InfraTabProps> = ({ project, onSaveDetails, onAddItem, onDeleteItem, canEdit }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [infraNotes, setInfraNotes] = useState(project.infraDetails || '');
   const [saving, setSaving] = useState(false);
@@ -51,13 +52,18 @@ export const InfraTab: React.FC<InfraTabProps> = ({ project, onSaveDetails, onAd
            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
              <Cloud size={20} className="text-indigo-600"/> Anotações Gerais
            </h3>
-           <button 
-             onClick={() => isEditing ? handleSave() : setIsEditing(true)} 
-             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isEditing ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-           >
-             {isEditing ? (saving ? 'Salvando...' : 'Salvar') : 'Editar'}
-           </button>
+           
+           {/* PROTEÇÃO: Botão Editar só aparece se tiver permissão */}
+           {canEdit && (
+               <button 
+                 onClick={() => isEditing ? handleSave() : setIsEditing(true)} 
+                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isEditing ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+               >
+                 {isEditing ? (saving ? 'Salvando...' : 'Salvar') : 'Editar'}
+               </button>
+           )}
         </div>
+
         {isEditing ? (
           <textarea 
             className="w-full h-48 p-4 border border-slate-300 rounded-lg font-mono text-sm text-slate-700 outline-none focus:border-indigo-500 transition-all" 
@@ -76,24 +82,33 @@ export const InfraTab: React.FC<InfraTabProps> = ({ project, onSaveDetails, onAd
       <div>
           <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-slate-800">Recursos & Acessos</h3>
-              <button 
-                onClick={onAddItem} 
-                className="flex items-center gap-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-100 transition-colors"
-              >
-                <Plus size={16}/> Novo Item
-              </button>
+              
+              {/* PROTEÇÃO: Botão Novo Item */}
+              {canEdit && (
+                  <button 
+                    onClick={onAddItem} 
+                    className="flex items-center gap-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-100 transition-colors"
+                  >
+                    <Plus size={16}/> Novo Item
+                  </button>
+              )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
              {project.infrastructure?.map((item: InfrastructureItem) => (
                  <div key={item.id} className="bg-white p-4 rounded-xl border border-slate-200 hover:border-indigo-300 transition-colors group relative">
-                    <button 
-                      onClick={() => onDeleteItem(item.id)} 
-                      className="absolute top-2 right-2 p-1.5 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                      title="Remover item"
-                    >
-                      <Trash2 size={14}/>
-                    </button>
+                    
+                    {/* PROTEÇÃO: Botão Deletar */}
+                    {canEdit && (
+                        <button 
+                          onClick={() => onDeleteItem(item.id)} 
+                          className="absolute top-2 right-2 p-1.5 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                          title="Remover item"
+                        >
+                          <Trash2 size={14}/>
+                        </button>
+                    )}
+                    
                     <div className={`${getBgColor(item.category)} w-10 h-10 rounded-lg flex items-center justify-center mb-3 transition-colors`}>
                        {getIcon(item.category)}
                     </div>
@@ -101,9 +116,10 @@ export const InfraTab: React.FC<InfraTabProps> = ({ project, onSaveDetails, onAd
                     <p className="text-xs text-slate-500 mt-1 font-mono bg-slate-50 p-1 rounded break-all">{item.value}</p>
                  </div>
              ))}
+             
              {(!project.infrastructure || project.infrastructure.length === 0) && (
                  <div className="col-span-3 text-center py-8 border border-dashed border-slate-300 rounded-xl text-slate-400 text-sm">
-                   Nenhum recurso adicionado. Clique em "Novo Item" para começar.
+                   {canEdit ? 'Nenhum recurso adicionado. Clique em "Novo Item" para começar.' : 'Nenhum recurso cadastrado.'}
                  </div>
              )}
           </div>

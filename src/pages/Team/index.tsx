@@ -3,11 +3,13 @@ import { Users, CheckCircle, Trash2, Shield, Clock, Search, KeyRound, AlertCircl
 import { api } from '../../services/api';
 import type { User, UserRole } from '../../types';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../hooks/useAuth'; // <--- Importação do Hook de Permissão
 
 // Lista de cargos disponíveis para seleção
 const ROLES: UserRole[] = ['DIRETOR', 'DESENVOLVEDOR', 'INFRA', 'COORDENADOR', 'COMERCIAL', 'ADMIN', 'USER'];
 
 export default function TeamPage() {
+  const { isAdmin } = useAuth(); // <--- Verifica se é Admin, Diretor ou Dev
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,7 +28,9 @@ export default function TeamPage() {
 
   useEffect(() => { loadUsers(); }, []);
 
+  // Aprovar Usuário (Ativar Conta)
   const handleApproveUser = async (user: User) => {
+      if (!isAdmin) return; // Proteção extra
       await toast.promise(
           api.updateUserStatus(user.id, 'ACTIVATE_USER'),
           { loading: 'Ativando...', success: 'Conta ativada!', error: 'Erro ao ativar.' }
@@ -34,7 +38,9 @@ export default function TeamPage() {
       loadUsers();
   };
 
+  // Aprovar Troca de Senha
   const handleApprovePassword = async (user: User) => {
+      if (!isAdmin) return;
       if (confirm(`Aprovar nova senha para ${user.name}?`)) {
           await toast.promise(
               api.updateUserStatus(user.id, 'APPROVE_PASSWORD'),
@@ -45,6 +51,7 @@ export default function TeamPage() {
   };
 
   const handleDelete = async (id: string) => {
+      if (!isAdmin) return;
       if (confirm('Tem certeza que deseja remover este usuário?')) {
           try {
             await api.deleteUser(id);
@@ -58,10 +65,14 @@ export default function TeamPage() {
 
   // Função para mudar o cargo
   const handleChangeRole = async (user: User, newRole: string) => {
+      if (!isAdmin) {
+          toast.error("Você não tem permissão para alterar cargos.");
+          return;
+      }
       try {
           await api.updateUser(user.id, { role: newRole as UserRole });
           toast.success(`Cargo de ${user.name} alterado para ${newRole}`);
-          loadUsers(); // Recarrega para confirmar
+          loadUsers(); 
       } catch {
           toast.error('Erro ao alterar cargo.');
       }
@@ -97,15 +108,19 @@ export default function TeamPage() {
                                     <p className="text-xs text-slate-500">{user.email}</p>
                                 </div>
                             </div>
-                            <div className="flex gap-1">
-                                {user.status === 'PENDING' && (
-                                    <button onClick={() => handleApproveUser(user)} className="p-2 text-green-600 hover:bg-green-50 rounded-full" title="Aprovar"><CheckCircle size={20} /></button>
-                                )}
-                                {user.tempPassword && (
-                                    <button onClick={() => handleApprovePassword(user)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-full animate-pulse" title="Aprovar Senha"><KeyRound size={20} /></button>
-                                )}
-                                <button onClick={() => handleDelete(user.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full"><Trash2 size={18} /></button>
-                            </div>
+                            
+                            {/* AÇÕES: Só aparecem se for ADMIN/DIRETOR/DEV */}
+                            {isAdmin && (
+                                <div className="flex gap-1">
+                                    {user.status === 'PENDING' && (
+                                        <button onClick={() => handleApproveUser(user)} className="p-2 text-green-600 hover:bg-green-50 rounded-full" title="Aprovar"><CheckCircle size={20} /></button>
+                                    )}
+                                    {user.tempPassword && (
+                                        <button onClick={() => handleApprovePassword(user)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-full animate-pulse" title="Aprovar Senha"><KeyRound size={20} /></button>
+                                    )}
+                                    <button onClick={() => handleDelete(user.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full"><Trash2 size={18} /></button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex flex-col gap-3 mt-2">
@@ -118,13 +133,14 @@ export default function TeamPage() {
                                 {user.tempPassword && <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full flex items-center gap-1 font-medium"><AlertCircle size={12}/> Senha?</span>}
                             </div>
 
-                            {/* SELETOR DE CARGO */}
-                            <div className="flex items-center gap-2 bg-slate-50 p-2 rounded border border-slate-100">
+                            {/* SELETOR DE CARGO: Desabilitado se não for Admin */}
+                            <div className={`flex items-center gap-2 bg-slate-50 p-2 rounded border ${isAdmin ? 'border-slate-100' : 'border-transparent bg-transparent pl-0'}`}>
                                 <Shield size={14} className="text-slate-400"/>
                                 <select 
-                                    className="bg-transparent text-xs font-medium text-slate-700 outline-none w-full cursor-pointer"
+                                    className={`bg-transparent text-xs font-medium text-slate-700 outline-none w-full ${isAdmin ? 'cursor-pointer' : 'cursor-not-allowed appearance-none'}`}
                                     value={user.role}
                                     onChange={(e) => handleChangeRole(user, e.target.value)}
+                                    disabled={!isAdmin} // Bloqueia o select
                                 >
                                     {ROLES.map(role => (
                                         <option key={role} value={role}>{role}</option>
