@@ -1,14 +1,26 @@
 import React from 'react';
-import { Layers, Server, Activity, Users, Briefcase } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Layers, Server, Activity, Users, Briefcase, LogOut } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
+
+  // Recupera o usuário salvo no login (com fallback para objeto vazio se não existir)
+  const user = JSON.parse(localStorage.getItem('nexus_user') || '{}');
 
   const isActive = (path: string) => {
     if (path === '/projects' && currentPath === '/') return true;
     return currentPath.startsWith(path);
+  };
+
+  const handleLogout = () => {
+      // Limpa os dados de sessão
+      localStorage.removeItem('nexus_token');
+      localStorage.removeItem('nexus_user');
+      // Redireciona para login
+      navigate('/login');
   };
 
   return (
@@ -19,7 +31,7 @@ export const Sidebar: React.FC = () => {
         <div className="bg-indigo-600 p-2 rounded-lg">
           <Layers size={20} className="text-white" />
         </div>
-        <span className="font-bold text-lg tracking-tight text-white">Nexus Hub</span>
+        <span className="font-bold text-lg tracking-tight text-white">Nexus Hub GHR</span>
       </div>
 
       {/* SEÇÃO DE NAVEGAÇÃO */}
@@ -49,7 +61,7 @@ export const Sidebar: React.FC = () => {
           </div>
         </Link>
 
-        {/* EQUIPE (NOVO LINK) */}
+        {/* EQUIPE */}
         <Link to="/team">
           <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${
             isActive('/team') 
@@ -74,11 +86,30 @@ export const Sidebar: React.FC = () => {
         </Link>
       </nav>
 
-      {/* SEÇÃO INFERIOR */}
+      {/* SEÇÃO INFERIOR (USUÁRIO) */}
       <div className="p-4 border-t border-indigo-800">
-        <div className="flex items-center gap-3 px-4 py-3 text-indigo-300">
-          <Users size={18} />
-          <span className="text-sm">Admin</span>
+        <div className="flex items-center justify-between gap-2 px-2">
+            <div className="flex items-center gap-3">
+                {/* Avatar com inicial */}
+                <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-sm border-2 border-indigo-400">
+                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-sm font-medium text-white truncate max-w-[90px]" title={user.name}>
+                        {user.name || 'Usuário'}
+                    </span>
+                    <span className="text-[10px] text-indigo-300 uppercase font-bold">
+                        {user.role === 'ADMIN' ? 'Administrador' : 'Colaborador'}
+                    </span>
+                </div>
+            </div>
+            <button 
+                onClick={handleLogout} 
+                className="text-indigo-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-indigo-800"
+                title="Sair do Sistema"
+            >
+                <LogOut size={18} />
+            </button>
         </div>
       </div>
     </aside>

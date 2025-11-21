@@ -41,7 +41,17 @@ export const api = {
     return res.json();
   },
 
-  updateUserStatus: async (id: string, action: 'ACTIVATE_USER' | 'BLOCK_USER'): Promise<void> => {
+  updateUser: async (id: string, data: Partial<User>): Promise<User> => {
+    const res = await fetch(`${API_URL}/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Erro ao atualizar usuário');
+    return res.json();
+  },
+
+  updateUserStatus: async (id: string, action: 'ACTIVATE_USER' | 'BLOCK_USER' | 'APPROVE_PASSWORD'): Promise<void> => {
     const res = await fetch(`${API_URL}/auth/approve/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader() },

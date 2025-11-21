@@ -5,9 +5,11 @@ import { api } from '../../services/api';
 import type { Project, Client } from '../../types';
 import { Badge } from '../../components/UI/Badge';
 import { CreateProjectModal } from '../../components/Projects/CreateProjectModal';
+import { useAuth } from '../../hooks/useAuth'; // <--- IMPORTAÇÃO DO HOOK DE PERMISSÃO
 
 export default function ProjectsPage() {
   const navigate = useNavigate(); 
+  const { canEdit, canDelete } = useAuth(); // <--- VERIFICAÇÃO DE PERMISSÕES
   
   // Estados de Dados
   const [projects, setProjects] = useState<Project[]>([]);
@@ -64,7 +66,6 @@ export default function ProjectsPage() {
   }, [projects, searchTerm, statusFilter, clientFilter]);
 
   // --- AGRUPAMENTO (Por Cliente) ---
-  // O agrupamento acontece APÓS a filtragem para mostrar apenas o relevante
   const projectsByClient = useMemo(() => {
     return filteredProjects.reduce((acc: Record<string, Project[]>, project) => { 
         const clientName = project.client || 'Outros';
@@ -78,12 +79,16 @@ export default function ProjectsPage() {
       <header className="h-auto bg-white border-b border-slate-200 px-8 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-slate-800">Catálogo de Projetos</h2>
-            <button 
-                onClick={() => setIsModalOpen(true)} 
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium shadow-sm transition-colors"
-            >
-                <Plus size={18} /> Novo Projeto
-            </button>
+            
+            {/* PROTEÇÃO: Só mostra botão Novo se puder editar (Dev, Diretor, Infra) */}
+            {canEdit && (
+                <button 
+                    onClick={() => setIsModalOpen(true)} 
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium shadow-sm transition-colors"
+                >
+                    <Plus size={18} /> Novo Projeto
+                </button>
+            )}
         </div>
 
         {/* BARRA DE FILTROS */}
@@ -189,7 +194,6 @@ export default function ProjectsPage() {
                                       </div>
                                    </div>
                                    <div className="flex gap-3 items-center">
-                                       {/* Badge com cor específica para Produção */}
                                        <Badge color={
                                            project.status === 'Concluído' ? 'green' : 
                                            project.status === 'Produção' ? 'purple' : 
@@ -198,13 +202,17 @@ export default function ProjectsPage() {
                                        }>
                                            {project.status}
                                        </Badge>
-                                       <button 
-                                         onClick={(e) => { e.stopPropagation(); handleDelete(project.id); }} 
-                                         className="text-slate-300 hover:text-red-500 p-2 hover:bg-red-50 rounded-full transition-colors"
-                                         title="Excluir Projeto"
-                                       >
-                                         <Trash2 size={18}/>
-                                       </button>
+                                       
+                                       {/* PROTEÇÃO: Só mostra Lixeira se puder Deletar (Admin/Diretor) */}
+                                       {canDelete && (
+                                           <button 
+                                             onClick={(e) => { e.stopPropagation(); handleDelete(project.id); }} 
+                                             className="text-slate-300 hover:text-red-500 p-2 hover:bg-red-50 rounded-full transition-colors"
+                                             title="Excluir Projeto"
+                                           >
+                                             <Trash2 size={18}/>
+                                           </button>
+                                       )}
                                    </div>
                                 </div>
                              </div>
@@ -217,7 +225,8 @@ export default function ProjectsPage() {
          )}
       </div>
 
-      <CreateProjectModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadData} />
+      {/* PROTEÇÃO: Modal só renderiza se puder Editar */}
+      {canEdit && <CreateProjectModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadData} />}
     </>
   );
 }

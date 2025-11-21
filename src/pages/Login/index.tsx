@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layers, ArrowRight, Lock, Mail, User, KeyRound, CheckCircle, AlertTriangle } from 'lucide-react';
-import { api } from '../../services/api'; // <--- Importação real da API
+import { api } from '../../services/api'; 
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -10,7 +10,6 @@ export default function LoginPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Estados dos inputs
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,44 +22,39 @@ export default function LoginPage() {
 
     try {
         if (mode === 'login') {
-            // Chamada real de Login
             const data = await api.login(email, password);
             
             // Salva o token para persistir a sessão
             localStorage.setItem('nexus_token', data.token);
-            // Opcional: Salvar dados do usuário se quiser mostrar "Olá, Pedro" na sidebar
-            // localStorage.setItem('nexus_user', JSON.stringify(data.user));
+            
+            // Salva os dados do usuário para exibir na Sidebar (nome, role, etc)
+            localStorage.setItem('nexus_user', JSON.stringify(data.user)); 
             
             navigate('/projects');
         } 
         else if (mode === 'register') {
-            // Chamada real de Registro
             await api.register(name, email, password);
             setSuccessMsg('Solicitação enviada com sucesso! Aguarde a aprovação do administrador.');
-            // Limpa campos sensíveis
             setPassword('');
         } 
         else if (mode === 'forgot') {
-            // Chamada real de Troca de Senha
-            await api.resetPassword(email, password); // Usando 'password' como a nova senha
+            await api.resetPassword(email, password); 
             setSuccessMsg('Nova senha solicitada! Aguarde a aprovação do administrador.');
             setPassword('');
         }
     } catch (error: any) {
         console.error(error);
-        // Exibe a mensagem de erro vinda da API (ex: "Credenciais inválidas", "Conta pendente")
         setErrorMsg(error.message || 'Ocorreu um erro inesperado.');
     } finally {
         setIsLoading(false);
     }
   };
 
-  // Função auxiliar para limpar estados ao trocar de aba
   const switchMode = (newMode: 'login' | 'register' | 'forgot') => {
       setMode(newMode);
       setErrorMsg('');
       setSuccessMsg('');
-      setPassword(''); // Limpa senha por segurança
+      setPassword(''); 
   };
 
   return (
@@ -74,7 +68,6 @@ export default function LoginPage() {
 
       <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fade-in">
         
-        {/* Área do Formulário */}
         <div className="p-8 w-full">
           <div className="flex justify-center mb-8">
              <div className="bg-indigo-600 p-3 rounded-xl shadow-lg shadow-indigo-200">

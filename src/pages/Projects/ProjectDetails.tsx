@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import type { Project, Module } from '../../types';
-import toast from 'react-hot-toast'; // <--- Importação das notificações
+import toast from 'react-hot-toast';
+import { useAuth } from '../../hooks/useAuth'; // <--- Importação do Hook
 
 // Componentes Modulares
 import { ProjectHeader } from '../../components/Projects/Details/ProjectHeader';
@@ -19,6 +20,7 @@ import { AddInfraModal } from '../../components/Projects/Details/AddInfraModal';
 export default function ProjectDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { canEdit, canDelete } = useAuth(); // <--- Verificação de Permissões
   
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,7 +35,6 @@ export default function ProjectDetails() {
 
   const refreshProject = () => {
       if (!id) return;
-      // Carregamento silencioso para atualizar a UI
       api.getProjectById(id).then(setProject).catch(console.error);
   };
 
@@ -50,45 +51,36 @@ export default function ProjectDetails() {
     }
   }, [id, navigate]);
 
-  // --- HANDLERS COM NOTIFICAÇÕES TOAST ---
+  // --- HANDLERS COM PROTEÇÃO ---
 
   const handleSaveDocs = async (newDocs: string) => {
-      if (!project) return;
+      if (!project || !canEdit) return; // Proteção Lógica
       await toast.promise(
           api.updateProject(project.id, { documentation: newDocs }),
-          {
-             loading: 'Salvando documentação...',
-             success: 'Documentação atualizada!',
-             error: 'Erro ao salvar documentação.'
-          }
+          { loading: 'Salvando...', success: 'Documentação salva!', error: 'Erro ao salvar.' }
       );
       refreshProject();
   };
 
   const handleSaveInfra = async (newInfraDetails: string) => {
-      if (!project) return;
+      if (!project || !canEdit) return;
       await toast.promise(
           api.updateProject(project.id, { infraDetails: newInfraDetails }),
-          {
-             loading: 'Salvando infraestrutura...',
-             success: 'Infraestrutura atualizada!',
-             error: 'Erro ao salvar.'
-          }
+          { loading: 'Salvando...', success: 'Infraestrutura salva!', error: 'Erro ao salvar.' }
       );
       refreshProject(); 
   };
 
-  // Salvar Módulo (Cria ou Atualiza)
   const handleSaveModule = async (moduleData: Partial<Module>) => {
-      if (!project) return;
+      if (!project || !canEdit) return;
       
       const promise = moduleToEdit 
         ? api.updateModule(moduleToEdit.id, moduleData)
         : api.addModule({ ...moduleData, projectId: project.id });
 
       await toast.promise(promise, {
-          loading: moduleToEdit ? 'Atualizando módulo...' : 'Criando módulo...',
-          success: moduleToEdit ? 'Módulo atualizado!' : 'Módulo adicionado com sucesso!',
+          loading: 'Salvando módulo...',
+          success: moduleToEdit ? 'Módulo atualizado!' : 'Módulo criado!',
           error: 'Erro ao salvar módulo.'
       });
       
@@ -97,17 +89,20 @@ export default function ProjectDetails() {
 
   // Abre modal em modo edição
   const handleOpenEditModule = (module: Module) => {
+      if (!canEdit) return;
       setModuleToEdit(module);
       setIsAddModuleOpen(true);
   };
 
   // Abre modal em modo criação
   const handleOpenAddModule = () => {
+      if (!canEdit) return;
       setModuleToEdit(null); 
       setIsAddModuleOpen(true);
   };
 
   const handleDeleteModule = async (moduleId: string) => {
+      if (!canEdit) return; 
       if (confirm('Tem certeza que deseja remover este módulo?')) {
           try {
               await api.deleteModule(moduleId);
@@ -120,32 +115,30 @@ export default function ProjectDetails() {
   };
 
   const handleAddInfraItem = async (data: any) => {
-      if (!project) return;
+      if (!project || !canEdit) return;
       await toast.promise(
           api.addInfraItem({ ...data, projectId: project.id }),
-          {
-             loading: 'Adicionando item...',
-             success: 'Item de infraestrutura adicionado!',
-             error: 'Erro ao adicionar item.'
-          }
+          { loading: 'Adicionando...', success: 'Item adicionado!', error: 'Erro ao adicionar.' }
       );
       refreshProject();
   };
 
   const handleDeleteInfraItem = async (itemId: string) => {
-      if (confirm('Remover este item de infraestrutura?')) {
+      if (!canEdit) return;
+      if (confirm('Remover este item de infra?')) {
           try {
             await api.deleteInfraItem(itemId);
             toast.success('Item removido.');
             refreshProject();
           } catch {
-            toast.error('Erro ao remover item.');
+            toast.error('Erro ao remover.');
           }
       }
   };
 
   const handleDeleteProject = async () => {
-      if (project && window.confirm('ATENÇÃO: Tem certeza que deseja excluir este projeto e todos os seus dados?')) {
+      if (!canDelete) return; // Apenas Admin
+      if (project && window.confirm('Tem certeza que deseja excluir este projeto COMPLETAMENTE?')) {
           try {
               await api.deleteProject(project.id);
               toast.success('Projeto excluído com sucesso.');
@@ -165,7 +158,6 @@ export default function ProjectDetails() {
 
   return (
     <div className="flex flex-col h-full bg-slate-50">
-      
       <ProjectHeader project={project} />
 
       <div className="bg-white border-b border-slate-200 px-6">
@@ -175,77 +167,71 @@ export default function ProjectDetails() {
                  { id: 'infra', label: 'Infraestrutura' },
                  { id: 'docs', label: 'Documentação' }, 
                  { id: 'settings', label: 'Configurações' }
-             ].map(tab => (
-                 <button 
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`py-4 text-sm font-medium transition-colors border-b-2 ${
-                        activeTab === tab.id 
-                        ? 'border-indigo-600 text-indigo-600' 
-                        : 'border-transparent text-slate-500 hover:text-slate-700'
-                    }`}
-                 >
-                    {tab.label}
-                 </button>
-             ))}
+             ].map(tab => {
+                 // PROTEÇÃO: Esconde a aba Configurações se não puder deletar
+                 if (tab.id === 'settings' && !canDelete) return null;
+                 return (
+                     <button 
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`py-4 text-sm font-medium transition-colors border-b-2 ${
+                            activeTab === tab.id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+                        }`}
+                     >
+                        {tab.label}
+                     </button>
+                 )
+             })}
          </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
-              
-              {/* COLUNA PRINCIPAL (ESQUERDA) */}
               <div className="lg:col-span-2 flex flex-col">
-                  
                   {activeTab === 'overview' && (
                       <OverviewTab 
                         project={project} 
-                        onAddModule={handleOpenAddModule} 
-                        onEditModule={handleOpenEditModule} 
-                        onDeleteModule={handleDeleteModule}
+                        // Se não puder editar, passa função vazia (visualmente o botão deve ser tratado nos componentes filhos também se desejar esconder totalmente)
+                        onAddModule={canEdit ? handleOpenAddModule : () => {}} 
+                        onEditModule={canEdit ? handleOpenEditModule : () => {}}
+                        onDeleteModule={canEdit ? handleDeleteModule : () => {}}
                       />
                   )}
 
                   {activeTab === 'infra' && (
                       <InfraTab 
                         project={project} 
-                        onSaveDetails={handleSaveInfra} 
-                        onAddItem={() => setIsAddInfraOpen(true)} 
-                        onDeleteItem={handleDeleteInfraItem} 
+                        onSaveDetails={canEdit ? handleSaveInfra : async () => {}} 
+                        onAddItem={canEdit ? () => setIsAddInfraOpen(true) : () => {}} 
+                        onDeleteItem={canEdit ? handleDeleteInfraItem : () => {}} 
                       />
                   )}
 
                   {activeTab === 'docs' && (
-                      <DocsTab project={project} onSaveDocs={handleSaveDocs} />
+                      <DocsTab 
+                        project={project} 
+                        onSaveDocs={canEdit ? handleSaveDocs : async () => {}} 
+                      />
                   )}
 
-                  {activeTab === 'settings' && (
+                  {/* Só renderiza se puder deletar */}
+                  {activeTab === 'settings' && canDelete && (
                       <SettingsTab onDelete={handleDeleteProject} />
                   )}
               </div>
-
-              {/* COLUNA LATERAL (DIREITA) */}
               <div className="space-y-6 h-fit">
                   <ClientCard project={project} onOpenDetails={handleOpenClientDetails} />
               </div>
-
           </div>
       </div>
 
-      {/* MODAIS */}
-      <AddModuleModal 
-        isOpen={isAddModuleOpen} 
-        onClose={() => setIsAddModuleOpen(false)} 
-        onSave={handleSaveModule} 
-        initialData={moduleToEdit} // Passa dados se for edição
-      />
-      
-      <AddInfraModal 
-        isOpen={isAddInfraOpen} 
-        onClose={() => setIsAddInfraOpen(false)} 
-        onSave={handleAddInfraItem} 
-      />
-
+      {/* PROTEÇÃO: Modais só existem se puder Editar */}
+      {canEdit && (
+          <>
+            <AddModuleModal isOpen={isAddModuleOpen} onClose={() => setIsAddModuleOpen(false)} onSave={handleSaveModule} initialData={moduleToEdit} />
+            <AddInfraModal isOpen={isAddInfraOpen} onClose={() => setIsAddInfraOpen(false)} onSave={handleAddInfraItem} />
+          </>
+      )}
     </div>
   );
 }

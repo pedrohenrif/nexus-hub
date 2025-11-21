@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Users, CheckCircle, XCircle, Trash2, Shield, Clock, Search } from 'lucide-react';
+import { Users, CheckCircle, Trash2, Shield, Clock, Search, KeyRound, AlertCircle } from 'lucide-react';
 import { api } from '../../services/api';
-import type { User } from '../../types';
+import type { User, UserRole } from '../../types';
 import toast from 'react-hot-toast';
+
+// Lista de cargos disponíveis para seleção
+const ROLES: UserRole[] = ['DIRETOR', 'DESENVOLVEDOR', 'INFRA', 'COORDENADOR', 'COMERCIAL', 'ADMIN', 'USER'];
 
 export default function TeamPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -23,12 +26,22 @@ export default function TeamPage() {
 
   useEffect(() => { loadUsers(); }, []);
 
-  const handleApprove = async (user: User) => {
+  const handleApproveUser = async (user: User) => {
       await toast.promise(
           api.updateUserStatus(user.id, 'ACTIVATE_USER'),
-          { loading: 'Aprovando...', success: 'Acesso liberado!', error: 'Erro ao aprovar.' }
+          { loading: 'Ativando...', success: 'Conta ativada!', error: 'Erro ao ativar.' }
       );
       loadUsers();
+  };
+
+  const handleApprovePassword = async (user: User) => {
+      if (confirm(`Aprovar nova senha para ${user.name}?`)) {
+          await toast.promise(
+              api.updateUserStatus(user.id, 'APPROVE_PASSWORD'),
+              { loading: 'Atualizando...', success: 'Senha atualizada!', error: 'Erro.' }
+          );
+          loadUsers();
+      }
   };
 
   const handleDelete = async (id: string) => {
@@ -40,6 +53,17 @@ export default function TeamPage() {
           } catch {
             toast.error('Erro ao remover.');
           }
+      }
+  };
+
+  // Função para mudar o cargo
+  const handleChangeRole = async (user: User, newRole: string) => {
+      try {
+          await api.updateUser(user.id, { role: newRole as UserRole });
+          toast.success(`Cargo de ${user.name} alterado para ${newRole}`);
+          loadUsers(); // Recarrega para confirmar
+      } catch {
+          toast.error('Erro ao alterar cargo.');
       }
   };
 
@@ -75,28 +99,38 @@ export default function TeamPage() {
                             </div>
                             <div className="flex gap-1">
                                 {user.status === 'PENDING' && (
-                                    <button onClick={() => handleApprove(user)} className="p-2 text-green-600 hover:bg-green-50 rounded-full" title="Aprovar Acesso">
-                                        <CheckCircle size={20} />
-                                    </button>
+                                    <button onClick={() => handleApproveUser(user)} className="p-2 text-green-600 hover:bg-green-50 rounded-full" title="Aprovar"><CheckCircle size={20} /></button>
                                 )}
-                                <button onClick={() => handleDelete(user.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full">
-                                    <Trash2 size={18} />
-                                </button>
+                                {user.tempPassword && (
+                                    <button onClick={() => handleApprovePassword(user)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-full animate-pulse" title="Aprovar Senha"><KeyRound size={20} /></button>
+                                )}
+                                <button onClick={() => handleDelete(user.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full"><Trash2 size={18} /></button>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2 mb-4">
-                            {user.status === 'PENDING' ? (
-                                <span className="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-full flex items-center gap-1 font-medium"><Clock size={12}/> Aguardando Aprovação</span>
-                            ) : (
-                                <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full flex items-center gap-1 font-medium"><CheckCircle size={12}/> Ativo</span>
-                            )}
-                            <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-full flex items-center gap-1"><Shield size={12}/> {user.role}</span>
-                        </div>
+                        <div className="flex flex-col gap-3 mt-2">
+                            <div className="flex items-center gap-2">
+                                {user.status === 'PENDING' ? (
+                                    <span className="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-full flex items-center gap-1 font-medium"><Clock size={12}/> Pendente</span>
+                                ) : (
+                                    <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full flex items-center gap-1 font-medium"><CheckCircle size={12}/> Ativo</span>
+                                )}
+                                {user.tempPassword && <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full flex items-center gap-1 font-medium"><AlertCircle size={12}/> Senha?</span>}
+                            </div>
 
-                        <div className="text-xs text-slate-400 border-t border-slate-100 pt-3 flex justify-between">
-                            <span>Criado em {new Date(user.createdAt).toLocaleDateString()}</span>
-                            <span>{user._count?.projects || 0} Projetos</span>
+                            {/* SELETOR DE CARGO */}
+                            <div className="flex items-center gap-2 bg-slate-50 p-2 rounded border border-slate-100">
+                                <Shield size={14} className="text-slate-400"/>
+                                <select 
+                                    className="bg-transparent text-xs font-medium text-slate-700 outline-none w-full cursor-pointer"
+                                    value={user.role}
+                                    onChange={(e) => handleChangeRole(user, e.target.value)}
+                                >
+                                    {ROLES.map(role => (
+                                        <option key={role} value={role}>{role}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     </div>
                 ))}

@@ -36,12 +36,15 @@ export interface Project {
   createdAt?: any;
 }
 
+export type UserRole = 'DIRETOR' | 'DESENVOLVEDOR' | 'INFRA' | 'COORDENADOR' | 'COMERCIAL' | 'ADMIN' | 'USER';
+
 export interface User {
   id: string;
   name: string;
   email: string;
   role: 'ADMIN' | 'USER';
   status: 'ACTIVE' | 'PENDING' | 'BLOCKED';
+  tempPassword?: string;
   createdAt: string;
   _count?: {
       projects: number;
