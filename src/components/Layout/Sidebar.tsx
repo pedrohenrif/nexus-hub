@@ -1,12 +1,11 @@
 import React from 'react';
-import { Layers, Server, Activity, Users, Briefcase } from 'lucide-react'; // Adicionado Briefcase
+import { Layers, Server, Activity, Users, Briefcase } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
   const currentPath = location.pathname;
 
-  // Verifica se o path atual começa com o link (ex: /projects/123 deixa /projects ativo)
   const isActive = (path: string) => {
     if (path === '/projects' && currentPath === '/') return true;
     return currentPath.startsWith(path);
@@ -38,7 +37,7 @@ export const Sidebar: React.FC = () => {
           </div>
         </Link>
 
-        {/* CLIENTES (NOVO) */}
+        {/* CLIENTES */}
         <Link to="/clients">
           <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${
             isActive('/clients') 
@@ -47,6 +46,18 @@ export const Sidebar: React.FC = () => {
           }`}>
             <Briefcase size={18} />
             <span>Clientes</span>
+          </div>
+        </Link>
+
+        {/* EQUIPE (NOVO LINK) */}
+        <Link to="/team">
+          <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${
+            isActive('/team') 
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' 
+              : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'
+          }`}>
+            <Users size={18} />
+            <span>Equipe</span>
           </div>
         </Link>
 
@@ -67,7 +78,7 @@ export const Sidebar: React.FC = () => {
       <div className="p-4 border-t border-indigo-800">
         <div className="flex items-center gap-3 px-4 py-3 text-indigo-300">
           <Users size={18} />
-          <span className="text-sm">Sua Equipe</span>
+          <span className="text-sm">Admin</span>
         </div>
       </div>
     </aside>

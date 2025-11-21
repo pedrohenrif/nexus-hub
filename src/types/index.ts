@@ -31,6 +31,19 @@ export interface Project {
   modules: Module[];
   infrastructure?: InfrastructureItem[]; 
   infraDetails?: string;            
-  documentation?: string;              
+  documentation?: string;     
+         
   createdAt?: any;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'ADMIN' | 'USER';
+  status: 'ACTIVE' | 'PENDING' | 'BLOCKED';
+  createdAt: string;
+  _count?: {
+      projects: number;
+  };
 }

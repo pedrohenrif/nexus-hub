@@ -1,115 +1,101 @@
-import type { Project, Module, Client } from '../types';
+import type { Project, Module, Client, User } from '../types';
 
 const API_URL = 'http://localhost:4000/api';
 
+const authHeader = () => {
+    const token = localStorage.getItem('nexus_token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
 export const api = {
-
-    login: async (email: string, password: string) => {
+  // --- AUTENTICAÇÃO ---
+  login: async (email: string, password: string) => {
     const res = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password })
     });
-
     const data = await res.json();
-    
-    if (!res.ok) {
-        throw new Error(data.error || 'Erro ao fazer login');
-    }
-    
-    return data; 
+    if (!res.ok) throw new Error(data.error || 'Erro ao fazer login');
+    return data;
   },
 
   register: async (name: string, email: string, password: string) => {
     const res = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password })
     });
-
-    if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Erro ao solicitar acesso');
-    }
-    
+    if (!res.ok) { const data = await res.json(); throw new Error(data.error || 'Erro ao solicitar acesso'); }
     return res.json();
   },
 
   resetPassword: async (email: string, newPassword: string) => {
     const res = await fetch(`${API_URL}/auth/reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, newPassword })
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, newPassword })
     });
-
-    if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Erro ao solicitar troca de senha');
-    }
-    
+    if (!res.ok) { const data = await res.json(); throw new Error(data.error || 'Erro ao solicitar troca'); }
     return res.json();
   },
 
+  // --- USUÁRIOS (EQUIPE) ---
+  getUsers: async (): Promise<User[]> => {
+    const res = await fetch(`${API_URL}/users`, { headers: authHeader() });
+    if (!res.ok) throw new Error('Erro ao buscar equipe');
+    return res.json();
+  },
 
-  // --- PROJETOS ---
+  updateUserStatus: async (id: string, action: 'ACTIVATE_USER' | 'BLOCK_USER'): Promise<void> => {
+    const res = await fetch(`${API_URL}/auth/approve/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({ action })
+    });
+    if (!res.ok) throw new Error('Erro ao atualizar status do usuário');
+  },
+
+  deleteUser: async (id: string): Promise<void> => {
+    const res = await fetch(`${API_URL}/users/${id}`, { method: 'DELETE', headers: authHeader() });
+    if (!res.ok) throw new Error('Erro ao excluir usuário');
+  },
+
   getProjects: async (): Promise<Project[]> => {
-    const res = await fetch(`${API_URL}/projects`);
+    const res = await fetch(`${API_URL}/projects`, { headers: authHeader() });
     if (!res.ok) throw new Error('Erro ao buscar projetos');
     const data = await res.json();
-    return data.map((item: any) => ({ 
-      ...item, 
-      client: item.client?.name || 'N/A', 
-      clientId: item.clientId 
-    }));
+    return data.map((item: any) => ({ ...item, client: item.client?.name || 'N/A', clientId: item.clientId }));
   },
 
   getProjectById: async (id: string): Promise<Project> => {
-    const res = await fetch(`${API_URL}/projects/${id}`);
+    const res = await fetch(`${API_URL}/projects/${id}`, { headers: authHeader() });
     if (!res.ok) throw new Error('Erro ao buscar projeto');
     const data = await res.json();
-    return { 
-      ...data, 
-      client: data.client?.name || 'N/A', 
-      clientId: data.clientId 
-    };
+    return { ...data, client: data.client?.name || 'N/A', clientId: data.clientId };
   },
 
   createProject: async (data: Partial<Project>): Promise<Project> => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { client, ...payload } = data; 
     const res = await fetch(`${API_URL}/projects`, {
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify(payload)
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error('Erro ao criar projeto');
     return res.json();
   },
 
-  // Atualizar Projeto (Usado para salvar a aba de Infraestrutura - Texto Geral)
   updateProject: async (id: string, data: Partial<Project>): Promise<Project> => {
     const res = await fetch(`${API_URL}/projects/${id}`, {
-      method: 'PUT', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify(data)
+      method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(data)
     });
     if (!res.ok) throw new Error('Erro ao atualizar projeto');
     return res.json();
   },
 
   deleteProject: async (id: string): Promise<void> => {
-    const res = await fetch(`${API_URL}/projects/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_URL}/projects/${id}`, { method: 'DELETE', headers: authHeader() });
     if (!res.ok) throw new Error('Erro ao excluir projeto');
   },
 
   // --- MÓDULOS ---
-  
-  // Adiciona um módulo a um projeto já existente
   addModule: async (moduleData: Partial<Module>): Promise<Module> => {
     const res = await fetch(`${API_URL}/modules`, {
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify(moduleData)
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(moduleData)
     });
     if (!res.ok) throw new Error('Erro ao adicionar módulo');
     return res.json();
@@ -117,54 +103,47 @@ export const api = {
 
   updateModule: async (id: string, moduleData: Partial<Module>): Promise<Module> => {
     const res = await fetch(`${API_URL}/modules/${id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(moduleData)
+      method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(moduleData)
     });
     if (!res.ok) throw new Error('Erro ao atualizar módulo');
     return res.json();
   },
 
-  // Remove um módulo específico
   deleteModule: async (id: string): Promise<void> => {
-    const res = await fetch(`${API_URL}/modules/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_URL}/modules/${id}`, { method: 'DELETE', headers: authHeader() });
     if (!res.ok) throw new Error('Erro ao remover módulo');
   },
 
-  // --- INFRAESTRUTURA (CARDS) ---
-
+  // --- INFRAESTRUTURA ---
   addInfraItem: async (itemData: any): Promise<any> => {
     const res = await fetch(`${API_URL}/infra`, {
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify(itemData)
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(itemData)
     });
-    if (!res.ok) throw new Error('Erro ao adicionar item de infra');
+    if (!res.ok) throw new Error('Erro ao adicionar item');
     return res.json();
   },
 
   deleteInfraItem: async (id: string): Promise<void> => {
-    const res = await fetch(`${API_URL}/infra/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Erro ao remover item de infra');
+    const res = await fetch(`${API_URL}/infra/${id}`, { method: 'DELETE', headers: authHeader() });
+    if (!res.ok) throw new Error('Erro ao remover item');
   },
 
   // --- CLIENTES ---
-  
   getClients: async (): Promise<Client[]> => {
     try {
-        const res = await fetch(`${API_URL}/clients`);
+        const res = await fetch(`${API_URL}/clients`, { headers: authHeader() });
         return res.ok ? res.json() : [];
     } catch { return []; }
   },
   
   createClient: async (name: string, internalCode: string): Promise<Client> => {
     const res = await fetch(`${API_URL}/clients`, {
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ name, internalCode })
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify({ name, internalCode })
     });
     if (!res.ok) throw new Error('Erro ao criar cliente');
     return res.json();
   },
-  
+
   updateClient: async (id: string, data: { name: string, internalCode: string }): Promise<Client> => {
     const res = await fetch(`${API_URL}/clients/${id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(data)
@@ -172,10 +151,9 @@ export const api = {
     if (!res.ok) throw new Error('Erro ao atualizar cliente');
     return res.json();
   },
-  
+
   deleteClient: async (id: string): Promise<void> => {
     const res = await fetch(`${API_URL}/clients/${id}`, { method: 'DELETE', headers: authHeader() });
     if (!res.ok) throw new Error('Erro ao excluir cliente');
   },
 };
-

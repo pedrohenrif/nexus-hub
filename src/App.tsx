@@ -11,7 +11,9 @@ import DashboardPage from './pages/Dashboard';
 import ProjectDetails from './pages/Projects/ProjectDetails';
 import LoginPage from './pages/Login';
 import ClientsPage from './pages/Clients'; 
+import TeamPage from './pages/Team'; // <--- Importação Nova
 
+// Componente de Guarda de Rotas (Private Route)
 const PrivateRoute = () => {
     const isAuthenticated = !!localStorage.getItem('nexus_token'); 
     return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
@@ -20,6 +22,7 @@ const PrivateRoute = () => {
 function App() {
   return (
     <BrowserRouter>
+      {/* Configuração Global das Notificações (Toast) */}
       <Toaster 
         position="top-right" 
         toastOptions={{
@@ -29,8 +32,8 @@ function App() {
             borderRadius: '8px',
             fontSize: '14px',
           },
-          success: { style: { background: '#10B981' } },
-          error: { style: { background: '#EF4444' } },
+          success: { style: { background: '#10B981' } }, 
+          error: { style: { background: '#EF4444' } },   
         }} 
       />
 
@@ -46,7 +49,14 @@ function App() {
               {/* Gestão de Projetos */}
               <Route path="projects" element={<ProjectsPage />} />
               <Route path="projects/:id" element={<ProjectDetails />} />
+              
+              {/* Gestão de Clientes */}
               <Route path="clients" element={<ClientsPage />} />
+
+              {/* Gestão de Equipe (NOVA ROTA) */}
+              <Route path="team" element={<TeamPage />} />
+              
+              {/* Dashboard */}
               <Route path="dashboard" element={<DashboardPage />} />
             </Route>
         </Route>
