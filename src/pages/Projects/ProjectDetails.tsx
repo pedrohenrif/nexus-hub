@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import type { Project, Module } from '../../types';
 import toast from 'react-hot-toast';
-import { useAuth } from '../../hooks/useAuth'; // <--- Importação do Hook
+import { useAuth } from '../../hooks/useAuth'; 
 
 // Componentes Modulares
 import { ProjectHeader } from '../../components/Projects/Details/ProjectHeader';
@@ -16,6 +16,7 @@ import { ClientCard } from '../../components/Projects/Details/ClientCard';
 // Modais
 import { AddModuleModal } from '../../components/Projects/Details/AddModuleModal'; 
 import { AddInfraModal } from '../../components/Projects/Details/AddInfraModal'; 
+import { EditProjectModal } from '../../components/Projects/EditProjectModal'; // <--- 1. Importação Adicionada
 
 export default function ProjectDetails() {
   const { id } = useParams<{ id: string }>();
@@ -28,8 +29,12 @@ export default function ProjectDetails() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'docs' | 'infra' | 'settings'>('overview');
   
+  // Estados de Visibilidade dos Modais
   const [isAddModuleOpen, setIsAddModuleOpen] = useState(false); 
   const [isAddInfraOpen, setIsAddInfraOpen] = useState(false); 
+  const [isEditProjectOpen, setIsEditProjectOpen] = useState(false); // <--- 2. Estado Novo
+  
+  // Estado para edição de módulo
   const [moduleToEdit, setModuleToEdit] = useState<Module | null>(null);
 
   const refreshProject = () => {
@@ -53,7 +58,7 @@ export default function ProjectDetails() {
   // --- HANDLERS PROTEGIDOS ---
 
   const handleSaveDocs = async (newDocs: string) => {
-      if (!project || !canEdit) return; // Proteção Lógica
+      if (!project || !canEdit) return; 
       await toast.promise(
           api.updateProject(project.id, { documentation: newDocs }),
           { loading: 'Salvando...', success: 'Documentação salva!', error: 'Erro ao salvar.' }
@@ -85,14 +90,14 @@ export default function ProjectDetails() {
       refreshProject(); 
   };
 
-  // Abre modal em modo edição
+  // Abre modal em modo edição de módulo
   const handleOpenEditModule = (module: Module) => {
       if (!canEdit) return;
       setModuleToEdit(module);
       setIsAddModuleOpen(true);
   };
 
-  // Abre modal em modo criação
+  // Abre modal em modo criação de módulo
   const handleOpenAddModule = () => {
       if (!canEdit) return;
       setModuleToEdit(null); 
@@ -135,7 +140,7 @@ export default function ProjectDetails() {
   };
 
   const handleDeleteProject = async () => {
-      if (!canDelete) return; // Apenas Admin/Diretor
+      if (!canDelete) return; 
       if (project && window.confirm('Tem certeza que deseja excluir este projeto COMPLETAMENTE?')) {
           try {
               await api.deleteProject(project.id);
@@ -156,7 +161,12 @@ export default function ProjectDetails() {
 
   return (
     <div className="flex flex-col h-full bg-slate-50">
-      <ProjectHeader project={project} />
+      {/* 3. Conectando o botão de editar no Header */}
+      <ProjectHeader 
+        project={project} 
+        onEdit={() => setIsEditProjectOpen(true)} 
+        canEdit={canEdit}
+      />
 
       <div className="bg-white border-b border-slate-200 px-6">
          <div className="flex gap-8">
@@ -166,7 +176,6 @@ export default function ProjectDetails() {
                  { id: 'docs', label: 'Documentação' }, 
                  { id: 'settings', label: 'Configurações' }
              ].map(tab => {
-                 // PROTEÇÃO: Esconde a aba Configurações (Excluir) se não puder deletar
                  if (tab.id === 'settings' && !canDelete) return null;
                  return (
                      <button 
@@ -189,7 +198,6 @@ export default function ProjectDetails() {
                   {activeTab === 'overview' && (
                       <OverviewTab 
                         project={project} 
-                        // Se não puder editar, passa função vazia (o botão não fará nada)
                         onAddModule={canEdit ? handleOpenAddModule : () => {}} 
                         onEditModule={canEdit ? handleOpenEditModule : () => {}}
                         onDeleteModule={canEdit ? handleDeleteModule : () => {}}
@@ -202,7 +210,7 @@ export default function ProjectDetails() {
                         onSaveDetails={canEdit ? handleSaveInfra : async () => {}} 
                         onAddItem={canEdit ? () => setIsAddInfraOpen(true) : () => {}} 
                         onDeleteItem={canEdit ? handleDeleteInfraItem : () => {}}
-                        canEdit={canEdit} // <--- Passando permissão para o componente esconder os botões visualmente
+                        canEdit={canEdit} 
                       />
                   )}
 
@@ -210,7 +218,7 @@ export default function ProjectDetails() {
                       <DocsTab 
                         project={project} 
                         onSaveDocs={canEdit ? handleSaveDocs : async () => {}}
-                        canEdit={canEdit} // <--- Passando permissão
+                        canEdit={canEdit} 
                       />
                   )}
 
@@ -224,11 +232,19 @@ export default function ProjectDetails() {
           </div>
       </div>
 
-      {/* Modais só renderizam se puder editar */}
+      {/* 4. Renderizando o Modal de Edição de Projeto */}
       {canEdit && (
           <>
             <AddModuleModal isOpen={isAddModuleOpen} onClose={() => setIsAddModuleOpen(false)} onSave={handleSaveModule} initialData={moduleToEdit} />
             <AddInfraModal isOpen={isAddInfraOpen} onClose={() => setIsAddInfraOpen(false)} onSave={handleAddInfraItem} />
+            
+            {/* Modal de Edição de Projeto */}
+            <EditProjectModal 
+              isOpen={isEditProjectOpen} 
+              onClose={() => setIsEditProjectOpen(false)} 
+              project={project} 
+              onUpdate={refreshProject} 
+            />
           </>
       )}
     </div>

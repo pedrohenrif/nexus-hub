@@ -43,7 +43,6 @@ export const AddModuleModal: React.FC<AddModuleModalProps> = ({ isOpen, onClose,
       onClose();
     } catch (error) {
       console.error(error);
-      alert("Erro ao salvar módulo.");
     } finally {
       setLoading(false);
     }
