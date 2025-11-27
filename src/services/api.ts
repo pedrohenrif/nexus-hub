@@ -1,7 +1,8 @@
-import type { Project, Module, Client, User } from '../types';
+import type { Project, Module, Client, User, TimelinePhase } from '../types';
 
 const API_URL = 'http://localhost:4000/api';
 
+// Helper para pegar o token e montar o header
 const authHeader = () => {
     const token = localStorage.getItem('nexus_token');
     return token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -41,6 +42,17 @@ export const api = {
     return res.json();
   },
 
+  // Aprovar senha ou ativar usuário
+  updateUserStatus: async (id: string, action: 'ACTIVATE_USER' | 'BLOCK_USER' | 'APPROVE_PASSWORD'): Promise<void> => {
+    const res = await fetch(`${API_URL}/auth/approve/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({ action })
+    });
+    if (!res.ok) throw new Error('Erro ao atualizar status do usuário');
+  },
+
+  // Alterar cargo ou dados do usuário
   updateUser: async (id: string, data: Partial<User>): Promise<User> => {
     const res = await fetch(`${API_URL}/users/${id}`, {
         method: 'PUT',
@@ -51,20 +63,12 @@ export const api = {
     return res.json();
   },
 
-  updateUserStatus: async (id: string, action: 'ACTIVATE_USER' | 'BLOCK_USER' | 'APPROVE_PASSWORD'): Promise<void> => {
-    const res = await fetch(`${API_URL}/auth/approve/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeader() },
-        body: JSON.stringify({ action })
-    });
-    if (!res.ok) throw new Error('Erro ao atualizar status do usuário');
-  },
-
   deleteUser: async (id: string): Promise<void> => {
     const res = await fetch(`${API_URL}/users/${id}`, { method: 'DELETE', headers: authHeader() });
     if (!res.ok) throw new Error('Erro ao excluir usuário');
   },
 
+  // --- PROJETOS ---
   getProjects: async (): Promise<Project[]> => {
     const res = await fetch(`${API_URL}/projects`, { headers: authHeader() });
     if (!res.ok) throw new Error('Erro ao buscar projetos');
@@ -80,7 +84,6 @@ export const api = {
   },
 
   createProject: async (data: Partial<Project>): Promise<Project> => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { client, ...payload } = data; 
     const res = await fetch(`${API_URL}/projects`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(payload)
@@ -100,6 +103,19 @@ export const api = {
   deleteProject: async (id: string): Promise<void> => {
     const res = await fetch(`${API_URL}/projects/${id}`, { method: 'DELETE', headers: authHeader() });
     if (!res.ok) throw new Error('Erro ao excluir projeto');
+  },
+
+  // --- MEMBROS DO PROJETO ---
+  addProjectMember: async (projectId: string, userId: string): Promise<void> => {
+    const res = await fetch(`${API_URL}/projects/${projectId}/members`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify({ userId })
+    });
+    if (!res.ok) throw new Error('Erro ao adicionar membro');
+  },
+
+  removeProjectMember: async (projectId: string, userId: string): Promise<void> => {
+    const res = await fetch(`${API_URL}/projects/${projectId}/members/${userId}`, { method: 'DELETE', headers: authHeader() });
+    if (!res.ok) throw new Error('Erro ao remover membro');
   },
 
   // --- MÓDULOS ---
@@ -136,6 +152,39 @@ export const api = {
   deleteInfraItem: async (id: string): Promise<void> => {
     const res = await fetch(`${API_URL}/infra/${id}`, { method: 'DELETE', headers: authHeader() });
     if (!res.ok) throw new Error('Erro ao remover item');
+  },
+
+  // --- CRONOGRAMA (TIMELINE) ---
+  getGlobalTimeline: async (): Promise<Project[]> => {
+    const res = await fetch(`${API_URL}/timeline/global`, { headers: authHeader() });
+    if (!res.ok) throw new Error('Erro ao buscar cronograma global');
+    const data = await res.json();
+    
+    return data.map((item: any) => ({
+        ...item,
+        client: item.client?.name || 'N/A'
+    }));
+  },
+
+  addTimelinePhase: async (phaseData: Partial<TimelinePhase>): Promise<any> => {
+    const res = await fetch(`${API_URL}/timeline`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(phaseData)
+    });
+    if (!res.ok) throw new Error('Erro ao adicionar fase');
+    return res.json();
+  },
+
+  updateTimelinePhase: async (id: string, phaseData: Partial<TimelinePhase>): Promise<any> => {
+    const res = await fetch(`${API_URL}/timeline/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(phaseData)
+    });
+    if (!res.ok) throw new Error('Erro ao atualizar fase');
+    return res.json();
+  },
+
+  deleteTimelinePhase: async (id: string): Promise<void> => {
+    const res = await fetch(`${API_URL}/timeline/${id}`, { method: 'DELETE', headers: authHeader() });
+    if (!res.ok) throw new Error('Erro ao remover fase');
   },
 
   // --- CLIENTES ---

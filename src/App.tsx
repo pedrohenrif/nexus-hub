@@ -11,9 +11,9 @@ import DashboardPage from './pages/Dashboard';
 import ProjectDetails from './pages/Projects/ProjectDetails';
 import LoginPage from './pages/Login';
 import ClientsPage from './pages/Clients'; 
-import TeamPage from './pages/Team'; // <--- Importação Nova
+import TeamPage from './pages/Team'; 
+import TimelinePage from './pages/Timeline'; 
 
-// Componente de Guarda de Rotas (Private Route)
 const PrivateRoute = () => {
     const isAuthenticated = !!localStorage.getItem('nexus_token'); 
     return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
@@ -22,7 +22,6 @@ const PrivateRoute = () => {
 function App() {
   return (
     <BrowserRouter>
-      {/* Configuração Global das Notificações (Toast) */}
       <Toaster 
         position="top-right" 
         toastOptions={{
@@ -53,8 +52,11 @@ function App() {
               {/* Gestão de Clientes */}
               <Route path="clients" element={<ClientsPage />} />
 
-              {/* Gestão de Equipe (NOVA ROTA) */}
+              {/* Gestão de Equipe */}
               <Route path="team" element={<TeamPage />} />
+
+              {/* Cronograma Global */}
+              <Route path="timeline" element={<TimelinePage />} />
               
               {/* Dashboard */}
               <Route path="dashboard" element={<DashboardPage />} />

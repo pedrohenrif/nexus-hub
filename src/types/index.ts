@@ -22,6 +22,15 @@ export interface Client {
   internalCode: string;
 }
 
+export interface TimelinePhase {
+  id: string;
+  name: string;
+  status: 'Pendente' | 'Em Andamento' | 'Concluído' | 'Atrasado';
+  startDate?: string; 
+  endDate?: string;
+  estimatedHours?: number; 
+}
+
 export interface Project {
   id: string;
   client: string;     
@@ -32,7 +41,8 @@ export interface Project {
   infrastructure?: InfrastructureItem[]; 
   infraDetails?: string;            
   documentation?: string;     
-         
+  timeline?: TimelinePhase[];
+  members?: User[]; 
   createdAt?: any;
 }
 

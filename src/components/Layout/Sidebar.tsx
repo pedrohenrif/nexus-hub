@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, Server, Activity, Users, Briefcase, LogOut } from 'lucide-react';
+import { Layers, Server, Activity, Users, Briefcase, LogOut, Calendar } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 export const Sidebar: React.FC = () => {
@@ -7,8 +7,20 @@ export const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const currentPath = location.pathname;
 
-  // Recupera o usuário salvo no login (com fallback para objeto vazio se não existir)
-  const user = JSON.parse(localStorage.getItem('nexus_user') || '{}');
+  // Recupera o usuário de forma segura
+  let user: any = {};
+  try {
+    const storedUser = localStorage.getItem('nexus_user');
+    if (storedUser) {
+      user = JSON.parse(storedUser);
+    }
+  } catch (e) {
+    console.error("Erro ao ler usuário do cache", e);
+  }
+
+  // Garante que userName seja sempre uma string
+  const userName = (typeof user?.name === 'string') ? user.name : 'Usuário';
+  const userRole = (typeof user?.role === 'string') ? user.role : 'GUEST';
 
   const isActive = (path: string) => {
     if (path === '/projects' && currentPath === '/') return true;
@@ -16,10 +28,8 @@ export const Sidebar: React.FC = () => {
   };
 
   const handleLogout = () => {
-      // Limpa os dados de sessão
       localStorage.removeItem('nexus_token');
       localStorage.removeItem('nexus_user');
-      // Redireciona para login
       navigate('/login');
   };
 
@@ -46,6 +56,18 @@ export const Sidebar: React.FC = () => {
           }`}>
             <Server size={18} />
             <span>Projetos</span>
+          </div>
+        </Link>
+
+        {/* CRONOGRAMA */}
+        <Link to="/timeline">
+          <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${
+            isActive('/timeline') 
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' 
+              : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'
+          }`}>
+            <Calendar size={18} />
+            <span>Cronograma</span>
           </div>
         </Link>
 
@@ -92,14 +114,14 @@ export const Sidebar: React.FC = () => {
             <div className="flex items-center gap-3">
                 {/* Avatar com inicial */}
                 <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-sm border-2 border-indigo-400">
-                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    {userName.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-sm font-medium text-white truncate max-w-[90px]" title={user.name}>
-                        {user.name || 'Usuário'}
+                    <span className="text-sm font-medium text-white truncate max-w-[90px]" title={userName}>
+                        {userName}
                     </span>
                     <span className="text-[10px] text-indigo-300 uppercase font-bold">
-                        {user.role === 'ADMIN' ? 'Administrador' : 'Colaborador'}
+                        {userRole === 'ADMIN' ? 'Administrador' : 'Colaborador'}
                     </span>
                 </div>
             </div>
