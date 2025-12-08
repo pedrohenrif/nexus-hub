@@ -1,6 +1,6 @@
 import type { Project, Module, Client, User, TimelinePhase } from '../types';
 
-const API_URL = 'http://localhost:4000/api';
+const API_URL = '/api'; 
 
 // Helper para pegar o token e montar o header
 const authHeader = () => {
