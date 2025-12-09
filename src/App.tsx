@@ -12,8 +12,10 @@ import ProjectDetails from './pages/Projects/ProjectDetails';
 import LoginPage from './pages/Login';
 import ClientsPage from './pages/Clients'; 
 import TeamPage from './pages/Team'; 
-import TimelinePage from './pages/Timeline'; 
+import TimelinePage from './pages/Timeline';
+import InfrastructurePage from './pages/Infrastructure'; // <--- Importação Nova
 
+// Componente de Guarda de Rotas
 const PrivateRoute = () => {
     const isAuthenticated = !!localStorage.getItem('nexus_token'); 
     return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
@@ -22,43 +24,35 @@ const PrivateRoute = () => {
 function App() {
   return (
     <BrowserRouter>
+      {/* Configuração Global das Notificações (Toast) */}
       <Toaster 
         position="top-right" 
         toastOptions={{
-          style: {
-            background: '#333',
-            color: '#fff',
-            borderRadius: '8px',
-            fontSize: '14px',
-          },
+          style: { background: '#333', color: '#fff', borderRadius: '8px', fontSize: '14px' },
           success: { style: { background: '#10B981' } }, 
           error: { style: { background: '#EF4444' } },   
         }} 
       />
 
       <Routes>
-        {/* Rota Pública */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Rotas Protegidas */}
         <Route element={<PrivateRoute />}>
             <Route path="/" element={<MainLayout />}>
               <Route index element={<Navigate to="/projects" replace />} />
               
-              {/* Gestão de Projetos */}
               <Route path="projects" element={<ProjectsPage />} />
               <Route path="projects/:id" element={<ProjectDetails />} />
               
-              {/* Gestão de Clientes */}
               <Route path="clients" element={<ClientsPage />} />
 
-              {/* Gestão de Equipe */}
               <Route path="team" element={<TeamPage />} />
 
-              {/* Cronograma Global */}
               <Route path="timeline" element={<TimelinePage />} />
+
+              {/* Rota Protegida de Infraestrutura */}
+              <Route path="infrastructure" element={<InfrastructurePage />} />
               
-              {/* Dashboard */}
               <Route path="dashboard" element={<DashboardPage />} />
             </Route>
         </Route>

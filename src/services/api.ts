@@ -1,6 +1,6 @@
 import type { Project, Module, Client, User, TimelinePhase } from '../types';
 
-const API_URL = '/api'; 
+const API_URL = import.meta.env.DEV ? 'http://localhost:4000/api' : '/api';
 
 // Helper para pegar o token e montar o header
 const authHeader = () => {
@@ -215,4 +215,55 @@ export const api = {
     const res = await fetch(`${API_URL}/clients/${id}`, { method: 'DELETE', headers: authHeader() });
     if (!res.ok) throw new Error('Erro ao excluir cliente');
   },
+
+  // --- INFRA MANAGER (SERVIDORES) ---
+  getServers: async (): Promise<Server[]> => {
+    const res = await fetch(`${API_URL}/infra-manager/servers`, { headers: authHeader() });
+    if (!res.ok) throw new Error('Erro ao buscar servidores');
+    return res.json();
+  },
+
+  createServer: async (data: Partial<Server>): Promise<Server> => {
+    const res = await fetch(`${API_URL}/infra-manager/servers`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Erro ao criar servidor');
+    return res.json();
+  },
+
+  updateServer: async (id: string, data: Partial<Server>): Promise<Server> => {
+    const res = await fetch(`${API_URL}/infra-manager/servers/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Erro ao atualizar servidor');
+    return res.json();
+  },
+
+  deleteServer: async (id: string): Promise<void> => {
+    const res = await fetch(`${API_URL}/infra-manager/servers/${id}`, { method: 'DELETE', headers: authHeader() });
+    if (!res.ok) throw new Error('Erro ao excluir servidor');
+  },
+
+  // --- INFRA MANAGER (AMBIENTES) ---
+  createEnvironment: async (data: Partial<ServerEnvironment>): Promise<ServerEnvironment> => {
+    const res = await fetch(`${API_URL}/infra-manager/environments`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Erro ao criar ambiente');
+    return res.json();
+  },
+
+  updateEnvironment: async (id: string, data: Partial<ServerEnvironment>): Promise<ServerEnvironment> => {
+    const res = await fetch(`${API_URL}/infra-manager/environments/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Erro ao atualizar ambiente');
+    return res.json();
+  },
+
+  deleteEnvironment: async (id: string): Promise<void> => {
+    const res = await fetch(`${API_URL}/infra-manager/environments/${id}`, { method: 'DELETE', headers: authHeader() });
+    if (!res.ok) throw new Error('Erro ao excluir ambiente');
+  },
+
 };

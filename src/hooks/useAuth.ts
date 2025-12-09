@@ -11,31 +11,21 @@ export const useAuth = () => {
     }
   }, []);
 
-  const isAdmin = () => {
-    if (!user) return false;
-    return ['DIRETOR', 'DESENVOLVEDOR', 'ADMIN'].includes(user.role);
-  };
+  const role = user?.role || '';
 
-  const canEdit = () => {
-    if (!user) return false;
-    return ['DIRETOR', 'DESENVOLVEDOR', 'INFRA', 'ADMIN'].includes(user.role);
-  };
+  const isAdmin = ['DIRETOR', 'DESENVOLVEDOR', 'ADMIN'].includes(role);
+  const canEdit = ['DIRETOR', 'DESENVOLVEDOR', 'INFRA', 'ADMIN'].includes(role);
+  const canDelete = ['DIRETOR', 'DESENVOLVEDOR', 'ADMIN'].includes(role);
+  const canAccessInfra = ['DIRETOR', 'INFRA', 'ADMIN'].includes(role);
 
-  const canDelete = () => {
-    if (!user) return false;
-    return ['DIRETOR', 'DESENVOLVEDOR', 'ADMIN'].includes(user.role);
-  };
-
-  const isViewer = () => {
-      if (!user) return true;
-      return ['COMERCIAL', 'COORDENADOR'].includes(user.role);
-  };
+  const isViewer = !canEdit;
 
   return {
     user,
-    isAdmin: isAdmin(),
-    canEdit: canEdit(),
-    canDelete: canDelete(),
-    isViewer: isViewer(),
+    isAdmin,
+    canEdit,
+    canDelete,
+    canAccessInfra, 
+    isViewer,
   };
 };

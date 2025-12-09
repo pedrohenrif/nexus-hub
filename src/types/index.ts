@@ -60,3 +60,24 @@ export interface User {
       projects: number;
   };
 }
+
+export interface ServerEnvironment {
+  id: string;
+  name: string;
+  accessType: string;
+  accessId: string;
+  accessPassword?: string; // Opcional/Criptografado
+  hasFixedIp: boolean;
+  notes?: string;
+  serverId: string;
+}
+
+export interface Server {
+  id: string;
+  name: string;
+  ipAddress: string;
+  username: string;
+  password?: string; // Opcional/Criptografado
+  notes?: string;
+  environments: ServerEnvironment[];
+}
