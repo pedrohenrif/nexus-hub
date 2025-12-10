@@ -13,7 +13,8 @@ import LoginPage from './pages/Login';
 import ClientsPage from './pages/Clients'; 
 import TeamPage from './pages/Team'; 
 import TimelinePage from './pages/Timeline';
-import InfrastructurePage from './pages/Infrastructure'; // <--- Importação Nova
+import InfrastructurePage from './pages/Infrastructure'; 
+import ServerDetails from './pages/Infrastructure/ServerDetails';
 
 // Componente de Guarda de Rotas
 const PrivateRoute = () => {
@@ -50,8 +51,8 @@ function App() {
 
               <Route path="timeline" element={<TimelinePage />} />
 
-              {/* Rota Protegida de Infraestrutura */}
               <Route path="infrastructure" element={<InfrastructurePage />} />
+              <Route path="infrastructure/:id" element={<ServerDetails />} />
               
               <Route path="dashboard" element={<DashboardPage />} />
             </Route>

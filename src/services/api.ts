@@ -1,4 +1,4 @@
-import type { Project, Module, Client, User, TimelinePhase } from '../types';
+import type { Project, Module, Client, User, TimelinePhase, Server, ServerEnvironment } from '../types';
 
 const API_URL = import.meta.env.DEV ? 'http://localhost:4000/api' : '/api';
 
@@ -7,6 +7,26 @@ const authHeader = () => {
     const token = localStorage.getItem('nexus_token');
     return token ? { 'Authorization': `Bearer ${token}` } : {};
 };
+
+// Função auxiliar para lidar com respostas da API de forma segura
+async function handleResponse(res: Response) {
+    const text = await res.text();
+    let data;
+    try {
+        // Tenta fazer o parse do JSON. Se o texto for vazio, retorna objeto vazio.
+        data = text ? JSON.parse(text) : {};
+    } catch (err) {
+        console.error("Erro ao fazer parse do JSON:", text);
+        // Se falhar o parse (ex: retornou HTML de erro do Nginx), lança erro legível
+        throw new Error(`Erro de comunicação com o servidor (${res.status}). Verifique se o backend está rodando.`);
+    }
+
+    if (!res.ok) {
+        // Se o status não for 2xx, lança o erro vindo da API ou o status text
+        throw new Error(data.error || `Erro ${res.status}: ${res.statusText}`);
+    }
+    return data;
+}
 
 export const api = {
   // --- AUTENTICAÇÃO ---
@@ -152,6 +172,11 @@ export const api = {
   deleteInfraItem: async (id: string): Promise<void> => {
     const res = await fetch(`${API_URL}/infra/${id}`, { method: 'DELETE', headers: authHeader() });
     if (!res.ok) throw new Error('Erro ao remover item');
+  },
+
+  getServerById: async (id: string): Promise<Server> => {
+    const res = await fetch(`${API_URL}/infra-manager/servers/${id}`, { headers: authHeader() });
+    return handleResponse(res);
   },
 
   // --- CRONOGRAMA (TIMELINE) ---

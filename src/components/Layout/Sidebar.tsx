@@ -7,8 +7,15 @@ export const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
-  
-  const { user, canAccessInfra } = useAuth(); 
+
+  // Importa as regras de acesso do hook
+  const { 
+    user, 
+    canAccessInfra, 
+    canAccessTimeline, 
+    canAccessClients, 
+    canAccessTeam 
+  } = useAuth(); 
 
   const isActive = (path: string) => {
     if (path === '/projects' && currentPath === '/') return true;
@@ -22,9 +29,8 @@ export const Sidebar: React.FC = () => {
   };
 
   // Garante strings para exibição
-  const displayName = typeof user?.name === 'string' ? user.name : 'Usuário';
-  const displayRole = typeof user?.role === 'string' ? user.role : 'GUEST';
-  const displayInitial = displayName.charAt(0).toUpperCase();
+  const userName = (typeof user?.name === 'string') ? user.name : 'Usuário';
+  const userRole = (typeof user?.role === 'string') ? user.role : 'GUEST';
 
   return (
     <aside className="w-64 bg-indigo-900 text-white flex flex-col shadow-xl h-screen sticky top-0 z-20">
@@ -39,62 +45,76 @@ export const Sidebar: React.FC = () => {
 
       {/* SEÇÃO DE NAVEGAÇÃO */}
       <nav className="flex-1 p-4 space-y-2">
+        
+        {/* PROJETOS (Todos acessam) */}
         <Link to="/projects">
-          <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${isActive('/projects') ? 'bg-indigo-600 text-white shadow-lg' : 'text-indigo-200 hover:bg-indigo-800'}`}>
+          <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${isActive('/projects') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'}`}>
             <Server size={18} /> <span>Projetos</span>
           </div>
         </Link>
 
-        <Link to="/timeline">
-          <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${isActive('/timeline') ? 'bg-indigo-600 text-white shadow-lg' : 'text-indigo-200 hover:bg-indigo-800'}`}>
-            <Calendar size={18} /> <span>Cronograma</span>
-          </div>
-        </Link>
+        {/* CRONOGRAMA (Todos menos Infra) */}
+        {canAccessTimeline && (
+          <Link to="/timeline">
+            <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${isActive('/timeline') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'}`}>
+              <Calendar size={18} /> <span>Cronograma</span>
+            </div>
+          </Link>
+        )}
 
+        {/* INFRAESTRUTURA (Só Infra e Diretor) */}
         {canAccessInfra && (
           <Link to="/infrastructure">
-            <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${isActive('/infrastructure') ? 'bg-indigo-600 text-white shadow-lg' : 'text-indigo-200 hover:bg-indigo-800'}`}>
+            <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${isActive('/infrastructure') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'}`}>
               <Database size={18} /> <span>Infraestrutura</span>
             </div>
           </Link>
         )}
 
-        <Link to="/clients">
-          <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${isActive('/clients') ? 'bg-indigo-600 text-white shadow-lg' : 'text-indigo-200 hover:bg-indigo-800'}`}>
-            <Briefcase size={18} /> <span>Clientes</span>
-          </div>
-        </Link>
+        {/* CLIENTES (Dev, Admin, Diretor) */}
+        {canAccessClients && (
+          <Link to="/clients">
+            <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${isActive('/clients') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'}`}>
+              <Briefcase size={18} /> <span>Clientes</span>
+            </div>
+          </Link>
+        )}
 
-        <Link to="/team">
-          <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${isActive('/team') ? 'bg-indigo-600 text-white shadow-lg' : 'text-indigo-200 hover:bg-indigo-800'}`}>
-            <Users size={18} /> <span>Equipe</span>
-          </div>
-        </Link>
+        {/* EQUIPE (Admin, Diretor) */}
+        {canAccessTeam && (
+          <Link to="/team">
+            <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${isActive('/team') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'}`}>
+              <Users size={18} /> <span>Equipe</span>
+            </div>
+          </Link>
+        )}
 
+        {/* DASHBOARD (Todos acessam) */}
         <Link to="/dashboard">
-          <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${isActive('/dashboard') ? 'bg-indigo-600 text-white shadow-lg' : 'text-indigo-200 hover:bg-indigo-800'}`}>
+          <div className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${isActive('/dashboard') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'}`}>
             <Activity size={18} /> <span>Dashboard</span>
           </div>
         </Link>
       </nav>
 
-      {/* RODAPÉ DO USUÁRIO (DINÂMICO) */}
+      {/* SEÇÃO INFERIOR (USUÁRIO) */}
       <div className="p-4 border-t border-indigo-800">
         <div className="flex items-center justify-between gap-2 px-2">
             <div className="flex items-center gap-3">
+                {/* Avatar com inicial */}
                 <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-sm border-2 border-indigo-400">
-                    {displayInitial}
+                    {userName.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-sm font-medium text-white truncate max-w-[90px]" title={displayName}>
-                        {displayName}
+                    <span className="text-sm font-medium text-white truncate max-w-[90px]" title={userName}>
+                        {userName}
                     </span>
                     <span className="text-[10px] text-indigo-300 uppercase font-bold">
-                        {displayRole === 'ADMIN' ? 'Admin' : displayRole}
+                        {userRole}
                     </span>
                 </div>
             </div>
-            <button onClick={handleLogout} className="text-indigo-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-indigo-800" title="Sair">
+            <button onClick={handleLogout} className="text-indigo-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-indigo-800" title="Sair do Sistema">
                 <LogOut size={18} />
             </button>
         </div>

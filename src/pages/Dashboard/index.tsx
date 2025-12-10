@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
-import type { Project } from '../../types';
-import { Users, Server, Box, Activity, Layout, PieChart as PieIcon, BarChart as BarIcon } from 'lucide-react';
+import type { Project, Server as ServerType } from '../../types';
+import { Users, Server, Box, Activity, Layout, PieChart as PieIcon, BarChart as BarIcon, HardDrive, Database, Shield } from 'lucide-react';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, 
   BarChart, Bar, XAxis, YAxis, CartesianGrid 
@@ -9,20 +9,33 @@ import {
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [servers, setServers] = useState<ServerType[]>([]); // Novo estado para servidores
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getProjects().then(data => {
-        setProjects(data);
-        setLoading(false);
-    });
+    const loadData = async () => {
+        try {
+            // Busca projetos e servidores em paralelo
+            const [projectsData, serversData] = await Promise.all([
+                api.getProjects(),
+                api.getServers()
+            ]);
+            setProjects(projectsData);
+            setServers(serversData);
+        } catch (error) {
+            console.error("Erro ao carregar dashboard", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    loadData();
   }, []);
 
   if (loading) return <div className="p-8 text-slate-400 flex items-center justify-center h-full">Carregando métricas...</div>;
 
-  // --- DADOS PARA GRÁFICOS ---
+  // --- DADOS PARA GRÁFICOS (PROJETOS) ---
 
-  // 1. Distribuição por Status (Pie Chart)
+  // 1. Distribuição por Status
   const statusCount = projects.reduce((acc, curr) => {
       acc[curr.status] = (acc[curr.status] || 0) + 1;
       return acc;
@@ -41,7 +54,7 @@ export default function DashboardPage() {
       'Manutenção': '#F59E0B'    // Amber
   };
 
-  // 2. Projetos por Cliente (Bar Chart)
+  // 2. Projetos por Cliente
   const clientCount = projects.reduce((acc, curr) => {
       const clientName = curr.client || 'Desconhecido';
       acc[clientName] = (acc[clientName] || 0) + 1;
@@ -53,11 +66,18 @@ export default function DashboardPage() {
       projetos: clientCount[client]
   })).sort((a, b) => b.projetos - a.projetos).slice(0, 5); // Top 5 Clientes
 
-  // --- TOTAIS ---
+  // --- CÁLCULOS DE TOTAIS ---
+  
+  // Projetos
   const totalProjects = projects.length;
   const totalModules = projects.reduce((acc, p) => acc + (p.modules?.length || 0), 0);
   const uniqueClients = new Set(projects.map(p => p.client)).size;
   const automations = projects.reduce((acc, p) => acc + (p.modules?.filter(m => m.type === 'Automação').length || 0), 0);
+
+  // Infraestrutura
+  const totalServers = servers.length;
+  const totalVMs = servers.reduce((acc, s) => acc + (s.environments?.length || 0), 0);
+  const totalFixedIps = servers.reduce((acc, s) => acc + (s.environments?.filter(e => e.hasFixedIp).length || 0), 0);
 
   return (
     <div className="flex flex-col h-full bg-slate-50">
@@ -67,28 +87,33 @@ export default function DashboardPage() {
        
        <div className="flex-1 overflow-y-auto p-8">
           
-          {/* KPI CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow">
-                    <div><p className="text-slate-500 text-sm font-medium mb-1">Total Clientes</p><p className="text-3xl font-bold text-slate-800">{uniqueClients}</p></div>
-                    <div className="p-3 bg-indigo-50 rounded-full text-indigo-600"><Users size={24} /></div>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow">
-                    <div><p className="text-slate-500 text-sm font-medium mb-1">Total Projetos</p><p className="text-3xl font-bold text-indigo-600">{totalProjects}</p></div>
-                    <div className="p-3 bg-blue-50 rounded-full text-blue-600"><Server size={24} /></div>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow">
-                    <div><p className="text-slate-500 text-sm font-medium mb-1">Módulos Ativos</p><p className="text-3xl font-bold text-emerald-600">{totalModules}</p></div>
-                    <div className="p-3 bg-emerald-50 rounded-full text-emerald-600"><Box size={24} /></div>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow">
-                    <div><p className="text-slate-500 text-sm font-medium mb-1">Automações</p><p className="text-3xl font-bold text-purple-600">{automations}</p></div>
-                    <div className="p-3 bg-purple-50 rounded-full text-purple-600"><Activity size={24} /></div>
-                </div>
+          {/* SEÇÃO 1: VISÃO GERAL DE PROJETOS */}
+          <div className="mb-8">
+              <h3 className="text-sm font-bold text-slate-400 uppercase mb-4 flex items-center gap-2">
+                  <Layout size={16}/> Visão Geral de Projetos
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow">
+                        <div><p className="text-slate-500 text-sm font-medium mb-1">Total Clientes</p><p className="text-3xl font-bold text-slate-800">{uniqueClients}</p></div>
+                        <div className="p-3 bg-indigo-50 rounded-full text-indigo-600"><Users size={24} /></div>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow">
+                        <div><p className="text-slate-500 text-sm font-medium mb-1">Total Projetos</p><p className="text-3xl font-bold text-indigo-600">{totalProjects}</p></div>
+                        <div className="p-3 bg-blue-50 rounded-full text-blue-600"><Server size={24} /></div>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow">
+                        <div><p className="text-slate-500 text-sm font-medium mb-1">Módulos Ativos</p><p className="text-3xl font-bold text-emerald-600">{totalModules}</p></div>
+                        <div className="p-3 bg-emerald-50 rounded-full text-emerald-600"><Box size={24} /></div>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow">
+                        <div><p className="text-slate-500 text-sm font-medium mb-1">Automações</p><p className="text-3xl font-bold text-purple-600">{automations}</p></div>
+                        <div className="p-3 bg-purple-50 rounded-full text-purple-600"><Activity size={24} /></div>
+                    </div>
+              </div>
           </div>
 
-          {/* GRÁFICOS */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* SEÇÃO 2: GRÁFICOS */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               
               {/* PIE CHART: Status */}
               <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
@@ -136,6 +161,48 @@ export default function DashboardPage() {
                   </div>
               </div>
           </div>
+
+          {/* SEÇÃO 3: INFRAESTRUTURA (NOVO) */}
+          <div>
+              <h3 className="text-sm font-bold text-slate-400 uppercase mb-4 flex items-center gap-2">
+                  <HardDrive size={16}/> Resumo de Infraestrutura
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {/* Card Servidores */}
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow">
+                      <div>
+                          <p className="text-slate-500 text-sm font-medium mb-1">Servidores Físicos/VPS</p>
+                          <p className="text-3xl font-bold text-slate-800">{totalServers}</p>
+                      </div>
+                      <div className="p-3 bg-orange-50 rounded-full text-orange-600">
+                          <HardDrive size={24} />
+                      </div>
+                  </div>
+
+                  {/* Card Ambientes/VMs */}
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow">
+                      <div>
+                          <p className="text-slate-500 text-sm font-medium mb-1">Total de VMs/Ambientes</p>
+                          <p className="text-3xl font-bold text-indigo-600">{totalVMs}</p>
+                      </div>
+                      <div className="p-3 bg-indigo-50 rounded-full text-indigo-600">
+                          <Database size={24} />
+                      </div>
+                  </div>
+
+                  {/* NOVO: Card IPs Fixos */}
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow">
+                      <div>
+                          <p className="text-slate-500 text-sm font-medium mb-1">Ambientes com IPs Fixos</p>
+                          <p className="text-3xl font-bold text-green-600">{totalFixedIps}</p>
+                      </div>
+                      <div className="p-3 bg-green-50 rounded-full text-green-600">
+                          <Shield size={24} />
+                      </div>
+                  </div>
+              </div>
+          </div>
+
        </div>
     </div>
   );

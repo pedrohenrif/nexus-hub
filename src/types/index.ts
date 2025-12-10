@@ -66,7 +66,7 @@ export interface ServerEnvironment {
   name: string;
   accessType: string;
   accessId: string;
-  accessPassword?: string; // Opcional/Criptografado
+  accessPassword?: string; 
   hasFixedIp: boolean;
   notes?: string;
   serverId: string;
@@ -77,7 +77,7 @@ export interface Server {
   name: string;
   ipAddress: string;
   username: string;
-  password?: string; // Opcional/Criptografado
+  password?: string; 
   notes?: string;
   environments: ServerEnvironment[];
 }
