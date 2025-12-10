@@ -26,7 +26,7 @@ export const useAuth = () => {
   const canAccessTimeline = ['DIRETOR', 'ADMIN', 'DESENVOLVEDOR', 'COORDENADOR', 'COMERCIAL'].includes(role);
   const canAccessClients = ['DIRETOR', 'ADMIN', 'DESENVOLVEDOR'].includes(role);
   const canAccessTeam = ['DIRETOR', 'ADMIN'].includes(role);
-  const canAccessInfra = ['DIRETOR', 'INFRA', 'ADMIN'].includes(role);
+  const canAccessInfra = ['DIRETOR', 'INFRA'].includes(role);
 
   return {
     user,
