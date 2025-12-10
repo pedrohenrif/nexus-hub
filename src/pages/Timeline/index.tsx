@@ -118,6 +118,9 @@ export default function GlobalTimelinePage() {
                     <option value="Em Andamento">Em Andamento</option>
                     <option value="Produção">Produção</option>
                     <option value="Planejamento">Planejamento</option>
+                    <option value="Manutenção">Manutenção</option>
+                    <option value="Parado">Parado</option>
+                    <option value="Cancelado">Cancelado</option>
                 </select>
             </div>
           </div>

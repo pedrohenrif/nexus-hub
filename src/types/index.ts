@@ -33,16 +33,22 @@ export interface TimelinePhase {
 
 export interface Project {
   id: string;
-  client: string;     
-  clientId?: string; 
+  client: string;
+  clientId?: string;
   title: string;
-  status: 'Em Andamento' | 'Planejamento' | 'Concluído' | 'Manutenção' | 'Produção';
+  status: 'Em Andamento' | 'Planejamento' | 'Concluído' | 'Manutenção' | 'Produção' | 'Parado' | 'Cancelado';
+  
   modules: Module[];
+  
   infrastructure?: InfrastructureItem[]; 
-  infraDetails?: string;            
-  documentation?: string;     
+  
+  serverEnvironments?: ServerEnvironment[]; 
+  
   timeline?: TimelinePhase[];
   members?: User[]; 
+  
+  infraDetails?: string;
+  documentation?: string;
   createdAt?: any;
 }
 
@@ -70,6 +76,19 @@ export interface ServerEnvironment {
   hasFixedIp: boolean;
   notes?: string;
   serverId: string;
+  isActive: boolean;
+  isOnPremise: boolean;
+  vCPU?: string;
+  ram?: string;
+  storage?: string;
+  os?: string;
+
+  server?: { name: string; ipAddress: string; };
+  projects?: { 
+    id: string; 
+    title: string; 
+    client?: { name: string } 
+  }[];
 }
 
 export interface Server {

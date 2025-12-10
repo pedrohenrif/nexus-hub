@@ -122,6 +122,8 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, 
                     <option>Produção</option>
                     <option>Concluído</option>
                     <option>Manutenção</option>
+                    <option>Cancelado</option>
+                    <option>Parado</option>
                 </select>
             </div>
           </div>

@@ -51,7 +51,9 @@ export default function DashboardPage() {
       'Planejamento': '#94A3B8', // Slate
       'Produção': '#8B5CF6',     // Violet
       'Concluído': '#10B981',    // Emerald
-      'Manutenção': '#F59E0B'    // Amber
+      'Manutenção': '#F59E0B',    // Amber
+      'Parado': '#f80000ff',
+      'Cancelado': '#5e5e5eff',
   };
 
   // 2. Projetos por Cliente
