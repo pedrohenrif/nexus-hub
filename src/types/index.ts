@@ -38,6 +38,9 @@ export interface Project {
   title: string;
   status: 'Em Andamento' | 'Planejamento' | 'Concluído' | 'Manutenção' | 'Produção' | 'Parado' | 'Cancelado';
   
+  type?: 'Projeto' | 'Suporte';
+  createdBy?: { id: string; name: string; email: string };
+
   modules: Module[];
   
   infrastructure?: InfrastructureItem[]; 
@@ -47,6 +50,9 @@ export interface Project {
   timeline?: TimelinePhase[];
   members?: User[]; 
   
+  ownerId?: string;
+  owner?: { id: string; name: string; email: string };
+
   infraDetails?: string;
   documentation?: string;
   createdAt?: any;

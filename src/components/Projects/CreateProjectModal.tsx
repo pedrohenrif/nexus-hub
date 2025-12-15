@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, ArrowLeft } from 'lucide-react';
+import { UserPlus, ArrowLeft } from 'lucide-react'; 
 import { Modal } from '../UI/Modal';
 import { api } from '../../services/api';
-import type { Project, Module, Client } from '../../types';
-import toast from 'react-hot-toast'; // <--- Importação
+import type { Project, Module, Client, User } from '../../types';
+import toast from 'react-hot-toast'; 
+import { useAuth } from '../../hooks/useAuth';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -11,11 +12,20 @@ interface CreateProjectModalProps {
   onSuccess: () => void;
 }
 
-const initialFormData = { clientId: '', title: '', status: 'Em Andamento' as Project['status'], modules: [] as Module[] };
+const initialFormData = { 
+    clientId: '', 
+    ownerId: '', // <--- NOVO: Campo de dono
+    title: '', 
+    type: 'Projeto' as 'Projeto' | 'Suporte', 
+    status: 'Em Andamento' as Project['status'], 
+    modules: [] as Module[] 
+};
 
 export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState(initialFormData);
   const [clients, setClients] = useState<Client[]>([]);
+  const [users, setUsers] = useState<User[]>([]); // Lista de usuários para seleção
   const [loading, setLoading] = useState(false);
   
   const [isCreatingClient, setIsCreatingClient] = useState(false);
@@ -24,16 +34,26 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, 
 
   useEffect(() => {
     if (isOpen) {
-      api.getClients().then(setClients).catch(console.error);
-      setFormData(initialFormData);
+      // Carrega clientes e usuários simultaneamente
+      Promise.all([api.getClients(), api.getUsers()])
+        .then(([clientsData, usersData]) => {
+            setClients(clientsData);
+            setUsers(usersData);
+        })
+        .catch(console.error);
+
+      // Reseta o form e define o usuário logado como dono padrão
+      setFormData({
+          ...initialFormData,
+          ownerId: user?.id || ''
+      });
       setIsCreatingClient(false);
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   const handleCreateClient = async () => {
       if(!newClientName || !newClientCode) return;
       try {
-          // Toast de promessa (loading, sucesso e erro automático)
           const newClient = await toast.promise(
               api.createClient(newClientName, newClientCode),
               {
@@ -55,13 +75,13 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, 
 
   const handleSubmit = async () => {
     if (!formData.clientId || !formData.title) {
-        toast.error("Preencha o cliente e o título."); // Toast de erro
+        toast.error("Preencha o cliente e o título."); 
         return;
     }
     try {
       setLoading(true);
       await api.createProject(formData);
-      toast.success("Projeto criado com sucesso!"); // Toast de sucesso
+      toast.success("Projeto criado com sucesso!"); 
       onSuccess();
       onClose();
     } catch (error) {
@@ -110,7 +130,33 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, 
                 <label className="text-sm font-medium text-slate-700">Projeto</label>
                 <input className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:border-indigo-500" placeholder="Nome do Projeto" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
             </div>
+            
+            {/* SELETOR DE RESPONSÁVEL (NOVO) */}
             <div>
+                <label className="text-sm font-medium text-slate-700">Responsável</label>
+                <select 
+                    className="w-full p-2.5 border border-slate-300 rounded-lg bg-white outline-none focus:border-indigo-500" 
+                    value={formData.ownerId} 
+                    onChange={e => setFormData({...formData, ownerId: e.target.value})}
+                >
+                    {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+             <div>
+                <label className="text-sm font-medium text-slate-700">Tipo de Demanda</label>
+                <select 
+                    className="w-full p-2.5 border border-slate-300 rounded-lg bg-white outline-none focus:border-indigo-500" 
+                    value={formData.type} 
+                    onChange={e => setFormData({...formData, type: e.target.value as any})}
+                >
+                    <option>Projeto</option>
+                    <option>Suporte</option>
+                </select>
+            </div>
+             <div>
                 <label className="text-sm font-medium text-slate-700">Status</label>
                 <select 
                   className="w-full p-2.5 border border-slate-300 rounded-lg bg-white outline-none focus:border-indigo-500" 
@@ -122,8 +168,6 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, 
                     <option>Produção</option>
                     <option>Concluído</option>
                     <option>Manutenção</option>
-                    <option>Cancelado</option>
-                    <option>Parado</option>
                 </select>
             </div>
           </div>
